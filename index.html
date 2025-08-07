@@ -1,0 +1,793 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Pushup Tracker — Clean Mobile UI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root{
+        --bg:#f8fafc;
+        --card:#ffffff;
+        --text:#0f172a;
+        --muted:#64748b;
+        --border:#e2e8f0;
+        --accent:#10b981; /* emerald */
+        --accent-2:#34d399;
+        --danger:#ef4444;
+        --shadow:0 1px 2px rgba(2,6,23,.06), 0 8px 24px rgba(2,6,23,.08);
+        --radius:14px;
+        --bar-h:68px;
+        --maxw:840px;
+      }
+      *{box-sizing:border-box}
+      html,body{height:100%}
+      body{
+        margin:0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, "Noto Sans";
+        color:var(--text);
+        background:linear-gradient(180deg,#f9fbff 0%,#f7fafc 100%);
+        padding-bottom: calc(var(--bar-h) + env(safe-area-inset-bottom, 0px));
+      }
+      .container{max-width:var(--maxw);margin:0 auto;padding:24px clamp(16px,4vw,24px)}
+      header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+      .title{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.2px}
+      .title span{font-size:22px}
+      .subtle{color:var(--muted);font-size:13px}
+      h2{margin:.2rem 0 .6rem 0;font-size:16px;letter-spacing:.2px}
+      .grid{display:grid;grid-template-columns:1fr;gap:16px}
+      @media(min-width:980px){.grid{grid-template-columns:340px 1fr}}
+      .card{
+        background:var(--card);
+        border:1px solid var(--border);
+        border-radius:var(--radius);
+        box-shadow:var(--shadow);
+        padding:16px;
+      }
+      .row{
+        display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+        padding:10px 0;border-top:1px dashed #e9eef6;
+      }
+      .row:first-child{border-top:0}
+      label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+      input[type="number"], select, input[type="range"]{
+        width:100%;border:1px solid var(--border);border-radius:12px;background:#fff;
+        padding:12px 14px;font-size:16px;min-height:44px;
+      }
+      input[type="range"]{accent-color:var(--accent)}
+      .btn{
+        appearance:none;border:0;border-radius:12px;
+        padding:14px 16px;min-height:44px;font-size:16px;font-weight:800;cursor:pointer;white-space:nowrap;
+        background:var(--accent);color:#063a2f;
+      }
+      .btn.light{background:#fff;color:var(--text);border:1px solid var(--border)}
+      .btn.dark{background:#0f172a;color:#fff}
+      .btn.ghost{background:#fff;color:var(--muted);border:1px dashed var(--border)}
+      .btn.danger{background:var(--danger);color:#fff}
+      .btn:disabled{opacity:.55;cursor:not-allowed}
+      .pill{
+        display:inline-flex;align-items:center;gap:6px;
+        border:1px solid var(--border);border-radius:999px;background:#fff;
+        padding:8px 12px;font-size:14px;color:var(--muted);
+      }
+      .progress-wrap{height:14px;border-radius:999px;background:#eef2f7;border:1px solid var(--border);overflow:hidden}
+      .progress{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .22s ease}
+      .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+      .stat{border:1px solid var(--border);border-radius:12px;background:#fff;padding:12px}
+      .stat .k{font-size:12px;color:var(--muted)}
+      .stat .v{font-weight:900;font-variant-numeric:tabular-nums}
+
+      /* Schedule (clean, collapsible) */
+      .schedule{display:grid;gap:10px}
+      details.hour{
+        border:1px solid var(--border);border-radius:14px;background:#fff;overflow:hidden;
+      }
+      summary{
+        list-style:none;padding:14px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;justify-content:space-between;
+      }
+      summary::-webkit-details-marker{display:none}
+      .hour-title{display:flex;align-items:center;gap:10px}
+      .hour-range{color:var(--muted);font-size:14px}
+      .hour-kpi{display:flex;align-items:center;gap:8px}
+      .hour-body{padding:10px 14px 14px}
+      .sets{display:grid;gap:10px}
+
+      .set{
+        display:grid;gap:8px;grid-template-columns:minmax(70px,90px) 1fr auto;
+        align-items:center;
+        border:1px solid var(--border);border-radius:12px;background:#fbfdff;padding:10px 12px;min-height:56px;
+      }
+      @media(max-width:560px){.set{grid-template-columns:1fr}}
+      .set.running{border-color:#bbf7d0;background:#ecfdf5}
+      .set .left{
+        display:flex;align-items:center;gap:10px;
+      }
+      .set input[type="checkbox"]{width:22px;height:22px}
+      .set .tag{font-weight:800}
+      .set .mid{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+      .set .reps{width:88px;padding:10px 10px;border-radius:10px;border:1px solid var(--border);font-size:16px}
+      .set .muted{font-size:14px}
+      .timer{font-weight:900;font-variant-numeric:tabular-nums;min-width:58px;text-align:center}
+      .set .right{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+      .success{
+        color:#065f46;background:#ecfdf5;border:1px solid #a7f3d0;padding:12px;border-radius:12px;font-weight:800
+      }
+
+      /* Sticky action bar */
+      .action-bar{
+        position:fixed;left:0;right:0;bottom:0;z-index:50;
+        background:rgba(255,255,255,.96);border-top:1px solid var(--border);backdrop-filter:saturate(120%) blur(6px);
+        padding:10px 0 calc(10px + env(safe-area-inset-bottom, 0px));
+        box-shadow:0 -6px 24px rgba(2,6,23,.08);
+      }
+      .action-bar .inner{
+        max-width:var(--maxw);margin:0 auto;padding:0 16px;
+        display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+      }
+      .ab-label{display:flex;align-items:center;gap:10px;min-height:44px}
+      .ab-controls{display:flex;gap:8px;flex-wrap:nowrap}
+      .ab-controls .btn{min-width:112px}
+      @media(max-width:430px){.ab-controls .btn{min-width:auto;padding-inline:12px}}
+
+      .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <div class="title"><span>💪</span> <div>Pushup Tracker</div></div>
+        <div id="todayLabel" class="subtle"></div>
+      </header>
+
+      <div class="grid">
+         Setup 
+        <section class="card" aria-labelledby="setupTitle">
+          <h2 id="setupTitle">Setup</h2>
+          <div class="row">
+            <div>
+              <label for="goal">Daily goal (reps)</label>
+              <input id="goal" type="number" min="10" step="10" value="200" />
+            </div>
+            <div class="pill subtle">Changing setup resets today</div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="startHour">Hours</label>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <select id="startHour" aria-label="Start hour"></select>
+                <span class="subtle" aria-hidden="true">to</span>
+                <select id="endHour" aria-label="End hour (exclusive)"></select>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button id="applyBtn" class="btn light">Apply</button>
+              <button id="resetBtn" class="btn ghost">Reset today</button>
+            </div>
+          </div>
+          <div class="row">
+            <div style="width:100%">
+              <label for="defaultReps">Default reps per set (8–15 recommended)</label>
+              <input id="defaultReps" type="range" min="8" max="15" step="1" value="12" />
+              <div style="display:flex;justify-content:space-between;margin-top:8px">
+                <span id="repsLabel" class="pill">12 reps</span>
+                <span id="estimateLabel" class="subtle">~38 sec</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+         Progress 
+        <section class="card" aria-labelledby="progressTitle">
+          <h2 id="progressTitle">Progress</h2>
+          <div class="row">
+            <div class="subtle">Completion</div>
+            <div>
+              <div class="progress-wrap"><div id="progressBar" class="progress"></div></div>
+              <div id="progressText" class="subtle" style="margin-top:6px">0%</div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="stats">
+              <div class="stat"><div class="k">Completed reps</div><div id="completedReps" class="v">0</div></div>
+              <div class="stat"><div class="k">Remaining reps</div><div id="remainingReps" class="v">0</div></div>
+              <div class="stat"><div class="k">Sets done</div><div id="setsDone" class="v">0</div></div>
+              <div class="stat"><div class="k">Sets left</div><div id="setsLeft" class="v">0</div></div>
+            </div>
+          </div>
+          <div class="row">
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <span id="hourChip" class="pill">Hour: —</span>
+              <span id="dayChip" class="pill">Day: —</span>
+              <span id="avgTimeChip" class="pill">Average time: —</span>
+            </div>
+            <div id="goalRow" style="display:none">
+              <div class="success">🎉 Goal Achieved! Start a new day?</div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="subtle">Actions</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button id="newDayBtn" class="btn dark">Start new day</button>
+            </div>
+          </div>
+
+          <details>
+            <summary class="subtle">History</summary>
+            <div id="historyList" style="display:grid;gap:8px;margin-top:10px" aria-live="polite"></div>
+            <div class="subtle" style="margin-top:6px">Stored only on this device.</div>
+          </details>
+        </section>
+      </div>
+
+      <section class="card" style="margin-top:16px" aria-labelledby="schedTitle">
+        <h2 id="schedTitle">Today's Hourly Schedule</h2>
+        <div id="schedule" class="schedule" role="list"></div>
+      </section>
+    </main>
+
+     Sticky bottom action bar 
+    <div class="action-bar" role="region" aria-label="Quick controls">
+      <div class="inner">
+        <div id="abLabel" class="ab-label subtle">Next: —</div>
+        <div class="ab-controls">
+          <button id="abStart" class="btn">Start</button>
+          <button id="abStop" class="btn light">Stop</button>
+          <button id="abComplete" class="btn dark">Complete</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Utilities
+      const pad = (n)=>String(n).padStart(2,'0');
+      const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
+      const todayKey = ()=>{const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());};
+      const fmtHour = (h)=>{const d=new Date();d.setHours(h,0,0,0);return new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit'}).format(d);};
+      const secsEstimate = (reps)=>{const r=clamp(reps,8,15);const t=(r-8)/(15-8);return Math.round(25+t*(45-25));};
+      const fmtMs = (ms)=>{const s=Math.floor(ms/1000);const m=Math.floor(s/60);const r=s%60;return m+':'+pad(r);};
+
+      // DOM refs
+      const todayLabel=document.getElementById('todayLabel');
+      const goalInput=document.getElementById('goal');
+      const startHourSelect=document.getElementById('startHour');
+      const endHourSelect=document.getElementById('endHour');
+      const defaultRepsRange=document.getElementById('defaultReps');
+      const repsLabel=document.getElementById('repsLabel');
+      const estimateLabel=document.getElementById('estimateLabel');
+      const applyBtn=document.getElementById('applyBtn');
+      const resetBtn=document.getElementById('resetBtn');
+      const newDayBtn=document.getElementById('newDayBtn');
+
+      const progressBar=document.getElementById('progressBar');
+      const progressText=document.getElementById('progressText');
+      const completedRepsEl=document.getElementById('completedReps');
+      const remainingRepsEl=document.getElementById('remainingReps');
+      const setsDoneEl=document.getElementById('setsDone');
+      const setsLeftEl=document.getElementById('setsLeft');
+      const hourChip=document.getElementById('hourChip');
+      const dayChip=document.getElementById('dayChip');
+      const avgTimeChip=document.getElementById('avgTimeChip');
+      const goalRow=document.getElementById('goalRow');
+
+      const scheduleEl=document.getElementById('schedule');
+      const historyList=document.getElementById('historyList');
+
+      // Action bar DOM
+      const abLabel=document.getElementById('abLabel');
+      const abStart=document.getElementById('abStart');
+      const abStop=document.getElementById('abStop');
+      const abComplete=document.getElementById('abComplete');
+
+      // Storage keys
+      const STORAGE_KEY='pushup-tracker:v5:state';
+      const HISTORY_KEY='pushup-tracker:v1:history';
+
+      // State
+      function defaultConfig(){return {goal:200,startHour:9,endHour:19,defaultReps:12};}
+      function totalSetsFromConfig(cfg){return Math.ceil(cfg.goal / cfg.defaultReps);}
+      function buildHours(cfg){
+        const count=Math.max(0,cfg.endHour - cfg.startHour);
+        const totalSets=totalSetsFromConfig(cfg);
+        if(count===0) return [];
+        const base=Math.floor(totalSets / count);
+        const rem=totalSets % count;
+        const hours=[];
+        for(let i=0;i<count;i++){
+          const sets = base + (i<rem?1:0);
+          hours.push({
+            hour: cfg.startHour + i,
+            sets: Array.from({length: sets}, ()=>({reps: cfg.defaultReps, done:false, elapsedMs:0}))
+          });
+        }
+        return hours;
+      }
+      function buildNewState(cfg){
+        return {date:todayKey(), config:{...cfg}, hours:buildHours(cfg), goalAchievedAt:null};
+      }
+      function saveState(s){localStorage.setItem(STORAGE_KEY, JSON.stringify(s));}
+      function loadState(){try{const raw=localStorage.getItem(STORAGE_KEY);return raw?JSON.parse(raw):null;}catch{return null;}}
+      function loadHistory(){try{return JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');}catch{return []}}
+      function saveHistory(list){localStorage.setItem(HISTORY_KEY, JSON.stringify(list));}
+
+      function pushHistoryFromState(s){
+        const allSets = s.hours.flatMap(h=>h.sets);
+        const doneSets = allSets.filter(x=>x.done);
+        const completedReps = doneSets.reduce((a,x)=>a + (x.reps||0), 0);
+        const totalSets = allSets.length;
+        const doneCount = doneSets.length;
+        const pct = Math.round((completedReps / s.config.goal) * 100);
+        const avgMsAllDone = (doneCount===totalSets && totalSets>0)
+          ? Math.round(doneSets.reduce((a,x)=>a+(x.elapsedMs||0),0)/totalSets)
+          : null;
+
+        const entry = {
+          date: s.date,
+          goal: s.config.goal,
+          defaultReps: s.config.defaultReps,
+          startHour: s.config.startHour,
+          endHour: s.config.endHour,
+          totalSets,
+          doneSets: doneCount,
+          completedReps,
+          percentage: pct,
+          averageMs: avgMsAllDone,
+          achievedAt: s.goalAchievedAt
+        };
+        const hist = loadHistory();
+        const idx = hist.findIndex(h=>h.date===entry.date);
+        if(idx!==-1) hist.splice(idx,1);
+        hist.unshift(entry);
+        saveHistory(hist.slice(0,30));
+      }
+
+      function ensureTodayState(){
+        const key=todayKey();
+        let s=loadState();
+        if(!s || s.date!==key){
+          if(s) pushHistoryFromState(s); // log previous day
+          s = buildNewState(defaultConfig());
+          saveState(s);
+        }
+        return s;
+      }
+
+      let state = ensureTodayState();
+
+      // Timers runtime (single running set at a time)
+      let runningKey = null; // "hIdx:sIdx"
+      const timers = new Map(); // key -> {handle, startedAt, baseMs}
+
+      function keyFor(hIdx,sIdx){return `${hIdx}:${sIdx}`;}
+      function stopAnyRunning(){
+        if(!runningKey) return;
+        const t = timers.get(runningKey);
+        if(!t){ runningKey=null; return; }
+        clearInterval(t.handle);
+        timers.delete(runningKey);
+        runningKey=null;
+      }
+
+      // Helpers
+      function nowHourIndex(){const h=new Date().getHours(); return state.hours.findIndex(x=>x.hour===h);}
+      function secondsUntil(d){return Math.max(0, Math.floor((d.getTime()-Date.now())/1000));}
+      function formatHMS(sec){const hh=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60;return (hh?`${hh}h `:'')+pad(m)+'m '+pad(s)+'s';}
+      function getHourEnd(h){const e=new Date(); e.setHours(h+1,0,0,0); return e;}
+
+      // Setup UI
+      function populateHourSelects(){
+        startHourSelect.innerHTML=''; endHourSelect.innerHTML='';
+        for(let h=5;h<=21;h++){
+          const o=document.createElement('option'); o.value=String(h); o.textContent=fmtHour(h); startHourSelect.appendChild(o);
+        }
+        for(let h=6;h<=23;h++){
+          const o=document.createElement('option'); o.value=String(h); o.textContent=fmtHour(h); endHourSelect.appendChild(o);
+        }
+      }
+      function updateSetupInputs(){
+        goalInput.value=state.config.goal;
+        startHourSelect.value=String(state.config.startHour);
+        endHourSelect.value=String(state.config.endHour);
+        defaultRepsRange.value=state.config.defaultReps;
+        repsLabel.textContent=`${state.config.defaultReps} reps`;
+        estimateLabel.textContent=`~${secsEstimate(state.config.defaultReps)} sec`;
+      }
+      function updateTodayLabel(){
+        const d=new Date();
+        todayLabel.textContent=new Intl.DateTimeFormat(undefined,{weekday:'long',month:'short',day:'numeric'}).format(d);
+      }
+
+      // Action bar helpers
+      function getSetRowBtns(hIdx,sIdx){
+        const row = document.querySelector(`.set[data-h-idx="${hIdx}"][data-s-idx="${sIdx}"]`);
+        if(!row) return null;
+        return {
+          row,
+          reps: row.querySelector('input.reps'),
+          timer: row.querySelector('.timer'),
+          state: row.querySelector('.state-pill'),
+          start: row.querySelector('.btn.start'),
+          stop: row.querySelector('.btn.stop'),
+          complete: row.querySelector('.btn.complete'),
+          doneCb: row.querySelector('input[type="checkbox"]')
+        };
+      }
+
+      function startSetTimer(hIdx,sIdx, btns){
+        const set = state.hours[hIdx].sets[sIdx];
+        if(set.done) return;
+        // stop other running
+        if(runningKey && runningKey!==keyFor(hIdx,sIdx)){
+          const [oh,os]=runningKey.split(':').map(Number);
+          const otherBtns = getSetRowBtns(oh,os);
+          if(otherBtns) stopSetTimer(oh,os, otherBtns);
+          else { // orphan timer
+            const t = timers.get(runningKey);
+            if(t){ clearInterval(t.handle); timers.delete(runningKey); }
+            runningKey=null;
+          }
+        }
+        const k = keyFor(hIdx,sIdx);
+        const baseMs = set.elapsedMs || 0;
+        const startedAt = performance.now();
+        const handle = setInterval(()=>{
+          const ms = baseMs + (performance.now()-startedAt);
+          set._liveMs = ms;
+          btns.timer.textContent = fmtMs(ms);
+        }, 200);
+        timers.set(k,{handle,startedAt,baseMs});
+        runningKey = k;
+
+        btns.start.disabled = true;
+        btns.stop.disabled = false;
+        btns.reps.disabled = true;
+        btns.row.classList.add('running');
+        updateActionBar();
+      }
+
+      function stopSetTimer(hIdx,sIdx, btns){
+        const k = keyFor(hIdx,sIdx);
+        const t = timers.get(k);
+        if(!t) return;
+        clearInterval(t.handle);
+        timers.delete(k);
+        if(runningKey === k) runningKey = null;
+
+        const set = state.hours[hIdx].sets[sIdx];
+        const finalMs = t.baseMs + (performance.now()-t.startedAt);
+        set.elapsedMs = Math.max(set.elapsedMs||0, Math.round(finalMs));
+        delete set._liveMs;
+        saveState(state);
+
+        btns.timer.textContent = fmtMs(set.elapsedMs);
+        btns.start.disabled = set.done;
+        btns.stop.disabled = true;
+        btns.reps.disabled = false;
+        btns.row.classList.remove('running');
+        updateProgressUI();
+        updateActionBar();
+      }
+
+      function completeSet(hIdx,sIdx, btns){
+        const set = state.hours[hIdx].sets[sIdx];
+        if(runningKey === keyFor(hIdx,sIdx)){
+          stopSetTimer(hIdx,sIdx, btns);
+        }
+        if(!set.elapsedMs || set.elapsedMs<=0){
+          const est = secsEstimate(set.reps);
+          if(confirm(`No timer recorded. Use estimated ${est}s?`)){ set.elapsedMs = est*1000; }
+        }
+        set.done = true;
+        saveState(state);
+        btns.start.disabled = true;
+        btns.stop.disabled = true;
+        btns.complete.disabled = true;
+        btns.reps.disabled = true;
+        btns.timer.textContent = fmtMs(set.elapsedMs||0);
+        btns.row.classList.remove('running');
+        btns.state.textContent = '✓ Done';
+        if (btns.doneCb) btns.doneCb.checked = true;
+
+        updateProgressUI();
+        maybeMarkGoalAchieved();
+        renderAvgChip();
+        updateActionBar();
+      }
+
+      function uncompleteSet(hIdx,sIdx, btns){
+        const set = state.hours[hIdx].sets[sIdx];
+        set.done = false;
+        saveState(state);
+        btns.start.disabled = false;
+        btns.stop.disabled = true;
+        btns.complete.disabled = false;
+        btns.reps.disabled = false;
+        btns.state.textContent = `~${secsEstimate(set.reps)}s est`;
+        if (btns.doneCb) btns.doneCb.checked = false;
+        updateProgressUI();
+        renderAvgChip();
+        updateActionBar();
+      }
+
+      // Schedule render (accordion hours)
+      function renderSchedule(){
+        stopAnyRunning();
+        scheduleEl.innerHTML='';
+        const currentIdx = nowHourIndex();
+
+        state.hours.forEach((hObj,hIdx)=>{
+          const d = document.createElement('details');
+          d.className='hour';
+          d.dataset.hIdx = String(hIdx);
+          if (hIdx === currentIdx && !state._expandedOnce) d.open = true;
+
+          const s = document.createElement('summary');
+          const title = document.createElement('div');
+          title.className='hour-title';
+          title.innerHTML = `<div style="font-weight:900">Hour ${hIdx+1}</div><div class="hour-range">${fmtHour(hObj.hour)} – ${fmtHour(hObj.hour+1)}</div>`;
+          const kpi = document.createElement('div');
+          kpi.className='hour-kpi';
+          kpi.innerHTML = `<span class="pill hour-kpi-pill">${hObj.sets.filter(x=>x.done).length}/${hObj.sets.length} sets</span>`;
+          s.appendChild(title); s.appendChild(kpi);
+
+          const body = document.createElement('div');
+          body.className='hour-body';
+          const setsWrap = document.createElement('div');
+          setsWrap.className='sets';
+
+          hObj.sets.forEach((set,sIdx)=>{
+            const row=document.createElement('div'); row.className='set'; row.dataset.hIdx=String(hIdx); row.dataset.sIdx=String(sIdx);
+            const left=document.createElement('div'); left.className='left';
+            const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=set.done; cb.title='Mark set complete';
+            const tag=document.createElement('div'); tag.className='tag'; tag.textContent=`Set ${sIdx+1}`;
+            left.appendChild(cb); left.appendChild(tag);
+
+            const mid=document.createElement('div'); mid.className='mid';
+            const repsInput=document.createElement('input'); repsInput.type='number'; repsInput.className='reps'; repsInput.min='1'; repsInput.max='500'; repsInput.step='1'; repsInput.value=String(set.reps);
+            const repsText=document.createElement('div'); repsText.className='subtle'; repsText.textContent=`${set.reps} pushups`;
+            const timer=document.createElement('div'); timer.className='timer'; timer.textContent=fmtMs(set.elapsedMs||0);
+            const stateP=document.createElement('span'); stateP.className='pill state-pill'; stateP.textContent=set.done?'✓ Done':`~${secsEstimate(set.reps)}s est`;
+            mid.appendChild(repsInput); mid.appendChild(repsText); mid.appendChild(timer); mid.appendChild(stateP);
+
+            const right=document.createElement('div'); right.className='right';
+            const startBtn=document.createElement('button'); startBtn.className='btn start'; startBtn.textContent='Start';
+            const stopBtn=document.createElement('button'); stopBtn.className='btn stop light'; stopBtn.textContent='Stop'; stopBtn.disabled=true;
+            const completeBtn=document.createElement('button'); completeBtn.className='btn complete dark'; completeBtn.textContent='Complete';
+
+            if(set.done){ startBtn.disabled=true; stopBtn.disabled=true; completeBtn.disabled=true; repsInput.disabled=true; }
+
+            const btns = {row,start:startBtn,stop:stopBtn,complete:completeBtn,reps:repsInput,timer,doneCb:cb,state:stateP};
+
+            startBtn.addEventListener('click',()=>startSetTimer(hIdx,sIdx,btns));
+            stopBtn.addEventListener('click',()=>stopSetTimer(hIdx,sIdx,btns));
+            completeBtn.addEventListener('click',()=>completeSet(hIdx,sIdx,btns));
+            cb.addEventListener('change',()=>{ if(cb.checked) completeSet(hIdx,sIdx,btns); else uncompleteSet(hIdx,sIdx,btns); });
+            repsInput.addEventListener('change',()=>{
+              set.reps = clamp(parseInt(repsInput.value||'0',10),1,500);
+              repsInput.value = String(set.reps);
+              if(!set.done) stateP.textContent = `~${secsEstimate(set.reps)}s est`;
+              repsText.textContent = `${set.reps} pushups`;
+              saveState(state);
+              updateProgressUI();
+              renderAvgChip();
+              updateActionBar();
+            });
+
+            row.appendChild(left); row.appendChild(mid); row.appendChild(right);
+            right.appendChild(startBtn); right.appendChild(stopBtn); right.appendChild(completeBtn);
+            setsWrap.appendChild(row);
+          });
+
+          body.appendChild(setsWrap);
+          d.appendChild(s); d.appendChild(body);
+          scheduleEl.appendChild(d);
+        });
+
+        state._expandedOnce = true;
+        updateActionBar();
+      }
+
+      function updateHourKPIs(){
+        document.querySelectorAll('details.hour').forEach((el)=>{
+          const hIdx = Number(el.dataset.hIdx);
+          const h = state.hours[hIdx];
+          const pill = el.querySelector('.hour-kpi-pill');
+          if(h && pill){
+            pill.textContent = `${h.sets.filter(s=>s.done).length}/${h.sets.length} sets`;
+          }
+        });
+      }
+
+      // Progress + chips
+      function updateProgressUI(){
+        const allSets = state.hours.flatMap(h=>h.sets);
+        const doneSets = allSets.filter(s=>s.done);
+        const completedReps = doneSets.reduce((a,s)=>a + (s.reps||0), 0);
+        const remaining = Math.max(0, state.config.goal - completedReps);
+        const pct = Math.min(100, Math.round((completedReps / state.config.goal) * 100));
+        const totalSets = allSets.length;
+        const setsDone = doneSets.length;
+
+        progressBar.style.width = pct + '%';
+        progressText.textContent = pct + '%';
+        completedRepsEl.textContent = completedReps;
+        remainingRepsEl.textContent = remaining;
+        setsDoneEl.textContent = `${setsDone}/${totalSets}`;
+        setsLeftEl.textContent = Math.max(0, totalSets - setsDone);
+        goalRow.style.display = completedReps >= state.config.goal ? '' : 'none';
+
+        updateHourKPIs();
+      }
+
+      function maybeMarkGoalAchieved(){
+        const reps = state.hours.flatMap(h=>h.sets).filter(s=>s.done).reduce((a,s)=>a+(s.reps||0),0);
+        if(reps >= state.config.goal && !state.goalAchievedAt){
+          state.goalAchievedAt = new Date().toISOString();
+          saveState(state);
+        }
+      }
+
+      function renderAvgChip(){
+        const allSets = state.hours.flatMap(h=>h.sets);
+        const allDone = allSets.length>0 && allSets.every(s=>s.done);
+        if(!allDone){ avgTimeChip.textContent='Average time: —'; return; }
+        const totalMs = allSets.reduce((a,s)=>a+(s.elapsedMs||0),0);
+        const avgMs = Math.round(totalMs / allSets.length);
+        avgTimeChip.textContent = `Average time: ${fmtMs(avgMs)}`;
+      }
+
+      // Day/hour timers (single definition)
+      let tickHandle = null;
+      function updateTimers(){
+        const now=new Date();
+        const dayStart=new Date(); dayStart.setHours(state.config.startHour,0,0,0);
+        const dayEnd=new Date(); dayEnd.setHours(state.config.endHour,0,0,0);
+
+        if(now < dayStart){
+          dayChip.textContent = `Starts in: ${formatHMS(secondsUntil(dayStart))}`;
+          hourChip.textContent = `First hour in: ${formatHMS(secondsUntil(dayStart))}`;
+        } else if(now >= dayEnd){
+          const nextStart=new Date(dayStart); nextStart.setDate(nextStart.getDate()+1);
+          dayChip.textContent = `Next start in: ${formatHMS(secondsUntil(nextStart))}`;
+          hourChip.textContent = 'Hours complete';
+        } else {
+          dayChip.textContent = `Day ends in: ${formatHMS(secondsUntil(dayEnd))}`;
+          const idx=nowHourIndex();
+          if(idx===-1){ hourChip.textContent='—'; }
+          else{
+            hourChip.textContent = `Hour ends in: ${formatHMS(secondsUntil(getHourEnd(state.hours[idx].hour)))}`;
+          }
+        }
+        updateActionBar();
+      }
+      function startTick(){
+        clearInterval(tickHandle);
+        tickHandle = setInterval(updateTimers, 1000);
+      }
+
+      // History
+      function renderHistory(){
+        const hist=loadHistory();
+        historyList.innerHTML='';
+        if(hist.length===0){
+          const empty=document.createElement('div'); empty.className='subtle'; empty.textContent='No history yet.'; historyList.appendChild(empty); return;
+        }
+        hist.forEach(item=>{
+          const row=document.createElement('div'); row.style.cssText='display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff';
+          const left=document.createElement('div');
+          left.innerHTML = `<div style="font-weight:900">${item.date}</div><div class="subtle">Goal ${item.goal} • ${fmtHour(item.startHour)}–${fmtHour(item.endHour)} • ${item.doneSets}/${item.totalSets} sets</div>`;
+          const right=document.createElement('div'); right.style.textAlign='right';
+          right.innerHTML = `<div style="font-weight:900">${item.percentage}%</div><div class="subtle">${item.completedReps} reps${item.averageMs!=null?` • Avg ${fmtMs(item.averageMs)}`:''}</div>`;
+          row.appendChild(left); row.appendChild(right); historyList.appendChild(row);
+        });
+      }
+
+      // Action bar logic
+      function findNextTarget(){
+        if(runningKey){
+          const [h,s]=runningKey.split(':').map(Number);
+          return {hIdx:h, sIdx:s};
+        }
+        const nowIdx = nowHourIndex();
+        if(nowIdx !== -1){
+          const sIdx = state.hours[nowIdx].sets.findIndex(s=>!s.done);
+          if(sIdx !== -1) return {hIdx: nowIdx, sIdx};
+        }
+        for(let h=0; h<state.hours.length; h++){
+          const sIdx = state.hours[h].sets.findIndex(s=>!s.done);
+          if(sIdx !== -1) return {hIdx: h, sIdx};
+        }
+        return null;
+      }
+      function updateActionBar(){
+        const t = findNextTarget();
+        if(!t){
+          abLabel.textContent='All sets done 🎉';
+          abStart.disabled=abStop.disabled=abComplete.disabled=true;
+          return;
+        }
+        const {hIdx,sIdx}=t;
+        const hour=state.hours[hIdx], set=hour.sets[sIdx];
+        const running = runningKey === keyFor(hIdx,sIdx);
+
+        abLabel.textContent = `Next • ${set.reps} pushups • ${fmtHour(hour.hour)}–${fmtHour(hour.hour+1)} • Set ${sIdx+1}`;
+        abStart.disabled = set.done || running;
+        abStop.disabled = !running;
+        abComplete.disabled = set.done;
+
+        // store idx on buttons
+        [abStart,abStop,abComplete].forEach(b=>{ b.dataset.hIdx=String(hIdx); b.dataset.sIdx=String(sIdx); });
+      }
+
+      abStart.addEventListener('click',()=>{
+        const h=Number(abStart.dataset.hIdx), s=Number(abStart.dataset.sIdx);
+        const btns = getSetRowBtns(h,s); if(btns) startSetTimer(h,s,btns);
+      });
+      abStop.addEventListener('click',()=>{
+        const h=Number(abStop.dataset.hIdx), s=Number(abStop.dataset.sIdx);
+        const btns = getSetRowBtns(h,s); if(btns) stopSetTimer(h,s,btns);
+      });
+      abComplete.addEventListener('click',()=>{
+        const h=Number(abComplete.dataset.hIdx), s=Number(abComplete.dataset.sIdx);
+        const btns = getSetRowBtns(h,s); if(btns) completeSet(h,s,btns);
+      });
+
+      // Apply/reset/new day
+      function applySetup(){
+        const cfg={
+          goal: clamp(parseInt(goalInput.value||'200',10),10,10000),
+          startHour: parseInt(startHourSelect.value,10),
+          endHour: parseInt(endHourSelect.value,10),
+          defaultReps: parseInt(defaultRepsRange.value,10)
+        };
+        if(cfg.endHour<=cfg.startHour){ alert('End hour must be after start hour.'); return; }
+        state = buildNewState(cfg);
+        saveState(state);
+        renderSchedule(); updateProgressUI(); renderAvgChip(); updateTimers(); updateActionBar();
+      }
+      function resetToday(){
+        if(!confirm('Reset today?')) return;
+        const cfg={...state.config};
+        state = buildNewState(cfg);
+        saveState(state);
+        renderSchedule(); updateProgressUI(); renderAvgChip(); updateTimers(); updateActionBar();
+      }
+      function startNewDay(){
+        pushHistoryFromState(state);
+        const cfg={...state.config};
+        state = buildNewState(cfg);
+        saveState(state);
+        renderSchedule(); updateProgressUI(); renderAvgChip(); renderHistory(); updateTimers(); updateActionBar();
+        window.scrollTo({top:0,behavior:'smooth'});
+      }
+
+      // Midnight rollover
+      function scheduleMidnightReset(){
+        const now=new Date();
+        const tomorrow=new Date(now); tomorrow.setDate(now.getDate()+1); tomorrow.setHours(0,0,0,50);
+        setTimeout(()=>{ pushHistoryFromState(state); const cfg={...state.config}; state=buildNewState(cfg); saveState(state);
+          renderSchedule(); updateProgressUI(); renderAvgChip(); renderHistory(); updateTimers(); updateActionBar(); scheduleMidnightReset();
+        }, tomorrow.getTime()-now.getTime());
+      }
+
+      // Events
+      applyBtn.addEventListener('click',()=>{ if(!confirm("Applying setup will reset today's progress. Continue?")) return; applySetup(); });
+      resetBtn.addEventListener('click', resetToday);
+      newDayBtn.addEventListener('click', startNewDay);
+      defaultRepsRange.addEventListener('input',()=>{ const v=parseInt(defaultRepsRange.value,10); repsLabel.textContent=`${v} reps`; estimateLabel.textContent=`~${secsEstimate(v)} sec`; });
+
+      // Init
+      function init(){
+        populateHourSelects();
+        updateSetupInputs();
+        renderSchedule();
+        updateProgressUI();
+        renderAvgChip();
+        renderHistory();
+        updateTimers(); startTick(); scheduleMidnightReset();
+
+        updateTodayLabel();
+        setInterval(updateTodayLabel, 60_000);
+      }
+      init();
+    </script>
+  </body>
+</html>
